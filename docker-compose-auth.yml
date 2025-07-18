@@ -1,4 +1,4 @@
-service:
+services:
   openldap:
     image: docker.io/bitnami/openldap:2.6
     hostname: openldap

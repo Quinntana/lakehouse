@@ -226,6 +226,26 @@ services:
       - ./docker/spark/spark-defaults-hudi.conf:/opt/spark/conf/spark-defaults.conf
       - ./docker/spark/hudi-defaults.conf:/opt/hudi/conf/hudi-defaults.conf
 
+  spark-thrift:
+    image: 1ambda/lakehouse:spark-3.4
+    container_name: spark-thrift
+    hostname: spark-thrift
+    command: /opt/spark/sbin/start-thriftserver.sh
+    ports:
+      - "10000:10000"
+    environment:
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio123
+      - AWS_REGION=us-east-1
+      - AWS_DEFAULT_REGION=us-east-1
+      - S3_ENDPOINT=http://minio:9000
+      - S3_PATH_STYLE_ACCESS=true
+    volumes:
+      - ./docker/spark/spark-defaults-iceberg.conf:/opt/spark/conf/spark-defaults.conf
+    depends_on:
+      - minio
+      - hive-metastore
+      
   ####################################################################################################
   # Flink
   ####################################################################################################

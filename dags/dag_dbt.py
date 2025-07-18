@@ -24,7 +24,8 @@ dag_args = build_default_args()
     doc_md=__doc__,
     default_args=dag_args,
     start_date=pendulum.datetime(2023, 9, 1, tz="Asia/Seoul"),
-    schedule="5 0 * * *",
+    schedule=None,
+    #schedule="0 * * * *",
     catchup=False,
     dagrun_timeout=dt.timedelta(minutes=60),
 )
