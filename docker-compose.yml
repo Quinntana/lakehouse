@@ -227,12 +227,32 @@ services:
       - ./docker/spark/hudi-defaults.conf:/opt/hudi/conf/hudi-defaults.conf
 
   spark-thrift:
+    profiles: ["spark"]
+    build:
+      dockerfile: ./docker/spark/Dockerfile-spark3.4
     image: 1ambda/lakehouse:spark-3.4
     container_name: spark-thrift
     hostname: spark-thrift
-    command: /opt/spark/sbin/start-thriftserver.sh
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        /opt/spark/sbin/start-thriftserver.sh \
+          --hiveconf hive.server2.thrift.port=10000 \
+          --conf spark.sql.catalog.iceberg=org.apache.iceberg.spark.SparkCatalog \
+          --conf spark.sql.catalog.iceberg.type=hive \
+          --conf spark.sql.catalog.iceberg.uri=thrift://hive-metastore:9083 \
+          --conf spark.sql.catalog.iceberg.warehouse=s3a://datalake/iceberg \
+          --conf spark.hadoop.fs.s3a.endpoint=http://minio:9000 \
+          --conf spark.hadoop.fs.s3a.access.key=minio \
+          --conf spark.hadoop.fs.s3a.secret.key=minio123 \
+          --conf spark.hadoop.fs.s3a.path.style.access=true \
+          --verbose \
+          && tail -f /opt/spark/logs/*.out
     ports:
       - "10000:10000"
+    depends_on:
+      - minio
+      - hive-metastore
     environment:
       - AWS_ACCESS_KEY_ID=minio
       - AWS_SECRET_ACCESS_KEY=minio123
@@ -242,10 +262,7 @@ services:
       - S3_PATH_STYLE_ACCESS=true
     volumes:
       - ./docker/spark/spark-defaults-iceberg.conf:/opt/spark/conf/spark-defaults.conf
-    depends_on:
-      - minio
-      - hive-metastore
-      
+
   ####################################################################################################
   # Flink
   ####################################################################################################
