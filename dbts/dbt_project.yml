@@ -30,7 +30,10 @@ models:
     +on_table_exists: drop
     staging:
       +schema: staging
-      +materialized: view
+      +materialized: table
+    intermediate:
+      +schema: intermediate
+      +materialized: table
     mart:
       +schema: mart
       +materialized: table

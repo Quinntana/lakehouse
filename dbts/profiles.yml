@@ -30,3 +30,25 @@ trino:
       http_scheme: http
       session_properties:
         query_max_run_time: 1h
+
+spark:
+  target: local
+  outputs:
+    local:
+      type: spark
+      method: thrift
+      host: localhost
+      port: 10000
+      schema: default
+      connect_retries: 5
+      connect_timeout: 10
+      retry_all: true
+    dev:
+      type: spark
+      method: thrift
+      host: spark-thrift
+      port: 10000
+      schema: default
+      connect_retries: 5
+      connect_timeout: 10
+      retry_all: true
