@@ -5,7 +5,7 @@ config-version: 2
 require-dbt-version: [ ">=1.4.0", "<2.0.0" ]
 
 # Configure profiles
-profile: 'trino'
+profile: 'spark'
 
 # Configure paths
 model-paths: [ "dbt-model" ]
@@ -31,12 +31,15 @@ models:
     staging:
       +schema: staging
       +materialized: table
+      +on_table_exists: drop
     intermediate:
       +schema: intermediate
       +materialized: table
+      +on_table_exists: drop
     mart:
       +schema: mart
       +materialized: table
+      +on_table_exists: drop
 
 # Configure dispatches
 dispatch:

@@ -3,7 +3,6 @@ version: 2
 sources:
   - name: tpch
     #catalog: tpch
-    database: tpch
     schema: tiny
     tables:
       - name: nation
