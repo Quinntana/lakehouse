@@ -26,7 +26,7 @@ x-airflow-common:
     AIRFLOW_UID: '50000'
     _AIRFLOW_WWW_USER_USERNAME: airflow
     _AIRFLOW_WWW_USER_PASSWORD: airflow
-    _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow==2.7.0 dbt-core dbt-trino trino airflow-dbt
+    _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow==2.7.0 dbt-core dbt-trino trino airflow-dbt dbt-spark==1.5.0 thrift-sasl
   volumes:
     - ./dags:/opt/airflow/dags
     - ./dbts:/opt/airflow/dbts

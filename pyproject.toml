@@ -12,6 +12,7 @@ dbt-trino = "^1.5.0"
 trino = "^0.326.0"
 urllib3 = "^1.26.16"
 airflow-dbt = "^0.4.0"
+dbt-spark = { version = "1.5.0", extras = ["PyHive"] }
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"
