@@ -25,5 +25,6 @@ RUN pip install --no-cache-dir \
     "dbt-core" \
     "dbt-trino" \
     "trino" \
+    "airflow-dbt" \
     "dbt-spark[PyHive]" \
     "thrift-sasl"

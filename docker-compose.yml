@@ -28,6 +28,7 @@ x-airflow-common:
     _AIRFLOW_WWW_USER_PASSWORD: airflow
     _PIP_ADDITIONAL_REQUIREMENTS:
       apache-airflow==2.7.0
+      airflow-dbt
       dbt-core
       dbt-trino
       trino
