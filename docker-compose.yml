@@ -3,7 +3,7 @@ version: "3.9"
 # Configure modules
 x-airflow-common:
   &airflow-common
-  image: apache/airflow:2.7.0-python3.10
+  image: custom-airflow-dbt:2.7.0
   environment:
     &airflow-common-env
     S3_ENDPOINT: http://minio:9000
@@ -26,7 +26,14 @@ x-airflow-common:
     AIRFLOW_UID: '50000'
     _AIRFLOW_WWW_USER_USERNAME: airflow
     _AIRFLOW_WWW_USER_PASSWORD: airflow
-    _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow==2.7.0 dbt-core dbt-trino trino airflow-dbt dbt-spark==1.5.0 thrift-sasl
+    _PIP_ADDITIONAL_REQUIREMENTS:
+      apache-airflow==2.7.0
+      dbt-core
+      dbt-trino
+      trino
+      dbt-spark[PyHive]
+      thrift-sasl
+
   volumes:
     - ./dags:/opt/airflow/dags
     - ./dbts:/opt/airflow/dbts
@@ -311,6 +318,7 @@ services:
       - ./docker/flink/flink-init-hudi.sql:/opt/flink-client/flink-init-hudi.sql
       - ./docker/flink/flink-sql-iceberg.sh:/opt/flink-client/flink-sql-iceberg
       - ./docker/flink/flink-init-iceberg.sql:/opt/flink-client/flink-init-iceberg.sql
+      - ./docker/flink/flink-sql-demo.sql:/opt/flink-client/flink-sql-demo.sql
 
   flink-taskmanager:
     profiles: [ "flink" ]
