@@ -3,6 +3,9 @@ version: "3.9"
 # Configure modules
 x-airflow-common:
   &airflow-common
+  build:
+    context: ./docker/airflow
+    dockerfile: Dockerfile
   image: custom-airflow-dbt:2.7.0
   environment:
     &airflow-common-env
