@@ -80,7 +80,8 @@ Follow these steps to set up and run the lakehouse pipeline on your local machin
    - Sign up and log in as an admin user.
    - Add a new hive.s3 source:
      - Type: hive.s3
-     - Name: `hive-metastore`
+     - Name: `HiveMetastore`
+     - Hive Metastore Host: `hive-metastore`
      - Port: `9083`
      - Enable "Advanced Options"
      - Connection Properties:
@@ -89,7 +90,7 @@ Follow these steps to set up and run the lakehouse pipeline on your local machin
        - `fs.s3a.connection.ssl.enabled`: `false`
        - `dremio.s3.compat`: `true`
        - `fs.s3a.aws.credentials.provider`: `org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider`
-    - Credential:
+    - Credentials:
        - `fs.s3a.access.key`: `minio`
        - `fs.s3a.secret.key`: `minio123`
    - Save the source and query the Iceberg tables.
