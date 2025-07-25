@@ -1,6 +1,6 @@
 # Lakehouse Playground
 
-![check](https://github.com/1ambda/lakehouse/actions/workflows/check.yml/badge.svg)
+![check](https://github.com/Quinntana/lakehouse/tree/development)
 
 Supported Data Pipeline Components
 
@@ -8,115 +8,102 @@ Supported Data Pipeline Components
 |----------------------------------------|---------|--------------------------|
 | [Trino](https://trino.io/)             | 425+    | Query Engine             |
 | [DBT](https://www.getdbt.com/)         | 1.5+    | Analytics Framework      |
-| [Spark](https://spark.apache.org/)     | 3.3+    | Computing Engine         |
-| [Flink](https://flink.apache.org/)     | 1.16+   | Computing Engine         |
+| [Spark](https://spark.apache.org/)     | 3.4+    | Computing Engine         |
+| [Flink](https://flink.apache.org/)     | 1.16+   | Streaming Engine         |
 | [Iceberg](https://iceberg.apache.org/) | 1.3.1+  | Table Format (Lakehouse) |
-| [Hudi](https://hudi.apache.org/)       | 0.13.1+ | Table Format (Lakehouse) |
 | [Airflow](https://airflow.apache.org/) | 2.7+    | Scheduler                |
-| [Jupyterlab](https://jupyter.org/)     | 3+      | Notebook                 |
 | [Kafka](https://kafka.apache.org/)     | 3.4+    | Messaging Broker         |
 | [Debezium](https://debezium.io/)       | 2.3+    | CDC Connector            |
-
-<br/>
+| [MinIO](https://min.io/)               | Latest  | Object Storage           |
+| [Dremio](https://www.dremio.com/)      | Latest  | Data Lake Engine         |
 
 ## Getting Started
 
-Execute compose containers first.
+Follow these steps to set up and run the lakehouse pipeline on your local machine using Docker (tested with the latest Docker version on WSL without Docker Desktop).
 
-```bash
-# Use `COMPOSE_PROFILES` to select the profile
-COMPOSE_PROFILES=trino docker-compose up;
-COMPOSE_PROFILES=spark docker-compose up;
-COMPOSE_PROFILES=flink docker-compose up;
-COMPOSE_PROFILES=airflow docker-compose up;
+### Setting Up the Pipeline
 
-# Combine multiple profiles
-COMPOSE_PROFILES=trino,spark docker-compose up;
+1. **Start all containers:**
 
-# for CDC environment (Kafka, ZK, Debezium)
-make compose.clean compose.cdc
+   ```bash
+   make compose.clean compose.freshstart
+   ```
 
-# for Stream environment (Kafka, ZK, Debezium + Flink)
-make compose.clean compose.stream
-```
+   This command cleans any existing volumes and starts all necessary containers (`Kafka`, `Zookeeper`, `Debezium`, `MySQL`, `MinIO`, `Hive Metastore`, `Trino`, `Spark`, `Flink`, `Airflow`, `Dremio`) in detached mode with a fresh build.
 
-Then access the lakehouse services.
+2. **Register Debezium connectors:**
 
-- Kafka UI: http://localhost:8088
-- Kafka Connect UI: http://localhost:8089
-- Trino: http://localhost:8889
-- Airflow (`airflow` / `airflow`) : http://localhost:8080
-- Local S3 Minio (`minio` / `minio123`): http://localhost:9000
-- Flink Job Manager UI (Docker): http://localhost:8082
-- Flink Job Manager UI (LocalApplication): http://localhost:8081
-- PySpark Jupyter Notebook (Iceberg): http://localhost:8900
-- PySpark Jupyter Notebook (Hudi): http://localhost:8901
-- Spark SQL (Iceberg): `docker exec -it spark-iceberg spark-sql`
-- Spark SQL (Hudi): `docker exec -it spark-hudi spark-sql`
-- Flink SQL (Iceberg): `docker exec -it flink-jobmanager flink-sql-iceberg`
-- Flink SQL (Hudi): `docker exec -it flink-jobmanager flink-sql-hudi;`
+   ```bash
+   make debezium.register
+   ```
 
-<br/>
+   Registers the Debezium connectors to capture changes from the MySQL database (`inventory.customers` and `inventory.products`) and stream them to Kafka topics.
 
-## CDC Starter kit
+3. **Create the datalake bucket in MinIO:**
 
-```bash
-# Run cdc-related containers
-make compose.cdc;
+   - Access the MinIO web UI at [http://localhost:9001/](http://localhost:9001/)
+   - Log in with username `minio` and password `minio123`
+   - Create a bucket named `datalake` (if not already created by `minio-job`).
 
-# Register debezium mysql connector using Avro Schema Registry
-make debezium.register.customers;
+4. **Run Flink SQL scripts for streaming ingestion:**
 
-# Register debezium mysql connector using JSON Format
-make debezium.register.products;
-```
+   - Access the Flink shell:
 
-### Running Flink Applications
+     ```bash
+     make flink.shell
+     ```
 
-Flink supports Java 11 but uses Java 8 due to its SQL (Hive) dependency.
-The Flink SQL Application within this project is written in Kotlin for SQL Readability.
+   - Inside the Flink container, set the Hadoop classpath and run the SQL script:
 
+     ```bash
+     export HADOOP_CLASSPATH=`/opt/hadoop/bin/hadoop classpath`
+     /opt/flink/bin/sql-client.sh embedded -f /opt/flink-client/flink-sql-demo.sql
+     ```
 
-You can run it as an Application in IDEA. (it is not a Kotlin Application)
-For Flink Application, the required dependencies are already included within the Production Docker Image or EMR cluster.
+   This sets up the Iceberg catalog and streams data from Kafka to Iceberg tables in MinIO.
 
-Therefore, they are set as 'Provided' dependencies in the Maven project, so to run them locally,
-you can include the `Add dependencies with "provided" scope to classpath"` IDEA option as shown in the screenshot below.
+5. **Run dbt models via Airflow:**
 
-After running the Local Flink Application, you can access the Flink Job Manager UI from localhost:8081.
+   - Access the Airflow web UI at [http://localhost:8080/](http://localhost:8080/) (username: `airflow`, password: `airflow`)
+   - Trigger the `dag_dbt` DAG to run dbt models using the Spark profile.
 
-![idea](./docs/images/idea.png)
+   Alternatively, run dbt manually inside the Airflow container:
 
+   ```bash
+   make airflow.shell
+   dbt run --profiles-dir . --profile spark --target dev
+   ```
 
-## DBT Starter kit
+6. **Configure Dremio for querying:**
 
-```bash
-# Run trino-related containers
-make compose.dbt;
+   - Access the Dremio web UI at [http://localhost:9047/](http://localhost:9047/)
+   - Sign up and log in as an admin user.
+   - Add a new S3 source:
+     - Type: Amazon S3
+     - Name: `Lakehouse`
+     - AWS Access Key: `minio`
+     - AWS Secret Key: `minio123`
+     - Root Path: `/datalake`
+     - Enable "Advanced Options"
+     - Connection Properties:
+       - `fs.s3a.endpoint`: `http://minio:9000`
+       - `fs.s3a.path.style.access`: `true`
+       - `fs.s3a.connection.ssl.enabled`: `false`
+       - `dremio.s3.compat`: `true`
+       - `fs.s3a.aws.credentials.provider`: `org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider`
+   - Save the source and query the Iceberg tables.
 
-# Prepare iceberg schema
-make trino-cli;
-$ create schema iceberg.staging WITH ( LOCATION = 's3://datalake/staging' );
-$ create schema iceberg.mart WITH ( LOCATION = 's3://datalake/mart' );
+### Accessing Pipeline Components
 
-# Execute dbt commands locally
-cd dbts;
-dbt deps;
-dbt run;
-dbt test;
-dbt docs generate && dbt docs serve --port 8070; # http://localhost:8070
-
-# Select dbt-created tables from trino-cli
-make trino-cli;
-$ SELECT * FROM iceberg.mart.aggr_location LIMIT 10;
-$ SELECT * FROM iceberg.staging.int_location LIMIT 10;
-$ SELECT * FROM iceberg.staging.stg_nations LIMIT 10;
-$ SELECT * FROM iceberg.staging.stg_regions LIMIT 10;
-
-# Execute airflow dags for dbt
-make airflow.shell;
-airflow dags backfill dag_dbt --local --reset-dagruns  -s 2022-09-02 -e 2022-09-03;
-```
+- **Airflow UI**: [http://localhost:8080/](http://localhost:8080/) (`airflow` / `airflow`)
+- **Dremio UI**: [http://localhost:9047/](http://localhost:9047/)
+- **MinIO UI**: [http://localhost:9001/](http://localhost:9001/) (`minio` / `minio123`)
+- **Kafka UI**: [http://localhost:8088/](http://localhost:8088/)
+- **Kafka Connect UI**: [http://localhost:8089/](http://localhost:8089/)
+- **Flink Job Manager UI**: [http://localhost:8082/](http://localhost:8082/)
+- **Trino CLI**: `make trino.cli`
+- **Spark Thrift Server**: `make spark.cli` (connects via `jdbc:hive2://spark-thrift:10000`)
+- **Jupyter Notebook (Spark/Iceberg)**: [http://localhost:8900/](http://localhost:8900/)
 
 ## Screenshots
 

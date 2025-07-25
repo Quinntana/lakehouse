@@ -5,22 +5,35 @@ help:
 	@echo ""
 	@echo "	 trino.cli\t		Execute trino-cli"
 	@echo "	 trino.shell\t\t 	Access trino-coordinator"
+	@echo "	 spark.cli\t\t 	Connect to Spark Thrift Server"
 	@echo "	 airflow.shell\t\t 	Access airflow-scheduler"
+	@echo "	 flink.shell\t\t 	Access flink-jobmanager"
 	@echo ""
 	@echo "	 compose.trino\t\t 	Run trino-related containers"
 	@echo "	 compose.dbt\t\t 	Run dbt-related containers"
+	@echo "	 compose.cdc\t\t 	Run CDC-related containers"
+	@echo "	 compose.freshstart\t 	Start entire pipeline"
+	@echo "	 compose.clean\t\t 	Clean container volumes"
 	@echo ""
+	@echo "	 debezium.register\t 	Register Debezium connectors"
 	@echo "	 check\t			Execute pre-commit hooks"
 	@echo "	 changelog\t	 	Update 'CHANGELOG.md'"
-	@echo ""
+
+.PHONY: flink.shell
+flink.shell:
+	docker exec -it flink-jobmanager /bin/bash
 
 .PHONY: trino.cli
 trino.cli:
-	trino --server http://localhost:8889
+	docker exec -it trino trino --server http://127.0.0.1:8889
 
 .PHONY: trino.shell
 trino.shell:
 	docker exec -w /etc/trino -it trino /bin/bash
+
+.PHONY: spark.cli
+spark.cli:
+	docker exec -it spark-thrift beeline -u jdbc:hive2://spark-thrift:10000
 
 .PHONY: airflow.shell
 airflow.shell:
