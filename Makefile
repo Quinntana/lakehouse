@@ -59,6 +59,10 @@ compose.cdc:
 compose.stream:
 	 COMPOSE_PROFILES=kafka docker-compose -f docker-compose.yml -f docker-compose-cdc.yml up
 
+.PHONY: compose.freshstart
+compose.freshstart:
+	COMPOSE_PROFILES=trino,spark,flink,airflow,dremio,kafka docker compose -f docker-compose-cdc.yml -f docker-compose.yml up -d --build --force-recreate --no-deps
+
 .PHONY: compose.clean
 compose.clean:
 	@ echo ""
