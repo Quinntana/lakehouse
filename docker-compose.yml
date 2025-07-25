@@ -490,6 +490,32 @@ services:
       start_period: 30s
     restart: always
 
+####################################################################################################
+# Dremio
+####################################################################################################
+  dremio:
+    image: dremio/dremio-oss:latest
+    container_name: dremio
+    profiles: [ "dremio" ]
+    ports:
+      - "9047:9047"    # Dremio UI (HTTP)
+      - "31010:31010"  # Dremio Flight (SQL/ODBC)
+      - "32010:32010"  # Dremio Flight (SQL/ODBC, alternate)
+      - "45678:45678"  # Dremio web UI (maybe unused in CE)
+    environment:
+      - DREMIO_JAVA_SERVER_EXTRA_OPTS=-Dpaths.dist=file:///opt/dremio/data/dist
+    command: >
+      /bin/bash -c "
+      mkdir -p /opt/dremio/data/dist/downloads /opt/dremio/data/dist/uploads &&
+      /opt/dremio/bin/dremio start
+      "
+    volumes:
+      - ./docker/dremio/dremio.conf:/opt/dremio/conf    # (optional) custom config
+      - ./docker/volume/dremio:/opt/dremio/data     # persist Dremio metadata
+    depends_on:
+      - hive-metastore
+      - minio
+
 # Configure Network
 networks:
   default:
