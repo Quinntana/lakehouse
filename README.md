@@ -78,19 +78,20 @@ Follow these steps to set up and run the lakehouse pipeline on your local machin
 
    - Access the Dremio web UI at [http://localhost:9047/](http://localhost:9047/)
    - Sign up and log in as an admin user.
-   - Add a new S3 source:
-     - Type: Amazon S3
-     - Name: `Lakehouse`
-     - AWS Access Key: `minio`
-     - AWS Secret Key: `minio123`
-     - Root Path: `/datalake`
+   - Add a new hive.s3 source:
+     - Type: hive.s3
+     - Name: `hive-metastore`
+     - Port: `9083`
      - Enable "Advanced Options"
      - Connection Properties:
-       - `fs.s3a.endpoint`: `http://minio:9000`
+       - `fs.s3a.endpoint`: `minio:9000`
        - `fs.s3a.path.style.access`: `true`
        - `fs.s3a.connection.ssl.enabled`: `false`
        - `dremio.s3.compat`: `true`
        - `fs.s3a.aws.credentials.provider`: `org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider`
+    - Credential:
+       - `fs.s3a.access.key`: `minio`
+       - `fs.s3a.secret.key`: `minio123`
    - Save the source and query the Iceberg tables.
 
 ### Accessing Pipeline Components
