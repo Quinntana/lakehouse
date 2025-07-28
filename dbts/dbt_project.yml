@@ -27,23 +27,28 @@ vars:
 # Configure models
 models:
   lakehouse:
-    +database: iceberg
     +on_table_exists: drop
     staging:
-      +database: iceberg
-      +schema: staging
+      +database: staging
       +materialized: table
-      +on_table_exists: drop
+      +file_format: iceberg
+      +custom_location: "s3a://datalake/iceberg/staging"
+      +tblproperties:
+        format-version: "2"
     intermediate:
-      +database: iceberg
-      +schema: intermediate
+      +database: intermediate
       +materialized: table
-      +on_table_exists: drop
+      +file_format: iceberg
+      +custom_location: "s3a://datalake/iceberg/intermediate"
+      +tblproperties:
+        format-version: "2"
     mart:
-      +database: iceberg
-      +schema: mart
+      +database: mart
       +materialized: table
-      +on_table_exists: drop
+      +file_format: iceberg
+      +custom_location: "s3a://datalake/iceberg/mart"
+      +tblproperties:
+        format-version: "2"
 
 # Configure dispatches
 dispatch:

@@ -1,4 +1,4 @@
-{{ config(materialized='table', schema='staging', catalog='iceberg') }}
+{{ config(materialized='table', schema='staging') }}
 
 with customers as (
     select *
