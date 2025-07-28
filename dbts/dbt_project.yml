@@ -28,6 +28,9 @@ vars:
 models:
   lakehouse:
     +on_table_exists: drop
+    +file_format: iceberg
+    +location_root: s3a://datalake/iceberg
+    +materialized: table
     staging:
       +database: staging
       +materialized: table

@@ -40,6 +40,7 @@ spark:
       host: localhost
       port: 10000
       schema: default
+      catalog: iceberg
       connect_retries: 5
       connect_timeout: 10
       retry_all: true
@@ -49,6 +50,7 @@ spark:
       host: spark-thrift
       port: 10000
       schema: default
+      catalog: iceberg
       connect_retries: 5
       connect_timeout: 10
       retry_all: true

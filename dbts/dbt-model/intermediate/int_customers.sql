@@ -1,4 +1,4 @@
-{{ config(materialized='table', schema='staging') }}
+{{ config(materialized='table', schema='intermediate') }}
 
 with staged as (
     select *
