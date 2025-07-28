@@ -41,7 +41,11 @@ airflow.shell:
 
 .PHONY: mysql.shell
 mysql.shell:
-	mycli -u root -p admin                                                                                                                                                                                                                  │
+	mycli -u root -p admin
+
+.PHONY: mysql.cli
+mysql.cli:
+	docker exec -it mysql mysql -u root -padmin
 
 .PHONY: debezium.register
 debezium.register: debezium.register.customers debezium.register.products

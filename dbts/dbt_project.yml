@@ -27,16 +27,20 @@ vars:
 # Configure models
 models:
   lakehouse:
+    +database: iceberg
     +on_table_exists: drop
     staging:
+      +database: iceberg
       +schema: staging
       +materialized: table
       +on_table_exists: drop
     intermediate:
+      +database: iceberg
       +schema: intermediate
       +materialized: table
       +on_table_exists: drop
     mart:
+      +database: iceberg
       +schema: mart
       +materialized: table
       +on_table_exists: drop
