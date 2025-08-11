@@ -1,0 +1,170 @@
+-- Docker
+docker compose -f docker-compose-cdc.yml up -d
+docker compose -f docker-compose.yml -f docker-compose-cdc.yml up -d --build --force-recreate --no-deps
+docker restart flink-jobmanager
+docker restart flink-taskmanager
+
+
+COMPOSE_PROFILES=trino,spark,flink,airflow,dremio,kafka docker compose -f docker-compose-cdc.yml -f docker-compose.yml down
+COMPOSE_PROFILES=trino,spark,flink,airflow,dremio,kafka docker compose -f docker-compose-cdc.yml -f docker-compose.yml up -d --build --force-recreate --no-deps
+
+-- MySQL
+docker exec -it mysql mysql -u root -padmin
+SELECT * FROM inventory.customers;
+INSERT INTO inventory.customers (id, first_name, last_name, email) VALUES (1002, 'John', 'Doe', 'john.doe@acme.com');
+
+-- Debezium
+make debezium.register
+make debezium.register.customers;
+make debezium.register.products;
+
+-- Kafka Topic
+docker exec -it kafka1 kafka-console-consumer \
+  --bootstrap-server kafka1:29092 \
+  --topic cdc-json.inventory.data.inventory.customers \
+  --from-beginning
+
+-- Minio
+#Create datalake bucket on http://localhost:9001/
+
+-- Flink
+#mkdir -p /opt/flink-client
+cat <<EOF > /opt/flink-client/demo-lakehouse.sql
+cat /opt/flink-client/demo-lakehouse.sql
+
+docker exec -it flink-jobmanager /bin/bash
+export HADOOP_CLASSPATH=`/opt/hadoop/bin/hadoop classpath`
+/opt/flink/bin/sql-client.sh embedded -f /opt/flink-client/flink-sql-demo.sql
+
+-- Spark
+docker exec -it spark-thrift beeline -u jdbc:hive2://spark-thrift:10000
+DROP TABLE spark_catalog.flink.iceberg_customers;
+DROP TABLE spark_catalog.staging.stg_customers;
+DROP TABLE spark_catalog.mart.mart_customers;
+DROP TABLE spark_catalog.intermediate.int_customers;
+
+rm -rf /opt/spark/spark-warehouse/mart.db/mart_customers
+rm -rf /opt/spark/spark-warehouse/staging.db/stg_customers
+rm -rf /opt/spark/spark-warehouse/intermediate.db/int_customers
+
+SELECT * FROM iceberg.flink.iceberg_customers ORDER BY id DESC LIMIT 5;
+SELECT * FROM spark_catalog.flink.iceberg_customers ORDER BY id DESC LIMIT 5;
+SELECT * FROM spark_catalog.staging.stg_customers ORDER BY customer_id DESC LIMIT 5;
+SELECT * FROM spark_catalog.mart.mart_customers ORDER BY id DESC LIMIT 5;
+SELECT * FROM spark_catalog.intermediate.int_customers ORDER BY customer_id DESC LIMIT 5;
+
+docker compose build spark-thrift
+docker stop spark-thrift  
+docker start spark-thrift 
+
+-- Trino
+DROP TABLE iceberg.flink.iceberg_customers;
+DROP TABLE iceberg.staging.stg_customers;
+DROP TABLE iceberg.mart.mart_customers;
+DROP TABLE iceberg.intermediate.int_customers;
+
+docker exec -it trino trino --server http://127.0.0.1:8889
+USE iceberg.flink;				
+SELECT * FROM iceberg.flink.iceberg_customers ORDER BY id DESC LIMIT 5;
+SELECT * FROM iceberg.staging.stg_customers ORDER BY customer_id DESC LIMIT 5;
+SELECT * FROM iceberg.mart.mart_customers ORDER BY id DESC LIMIT 5;
+SELECT * FROM iceberg.intermediate.int_customers ORDER BY customer_id DESC LIMIT 5;
+
+SELECT * FROM "iceberg_customers$snapshots"
+ORDER BY committed_at DESC;
+SELECT *
+FROM iceberg_customers
+FOR VERSION AS OF 8509754515642417546;
+
+-- Poetry
+poetry run dbt run 
+poetry lock 
+poetry install --no-root
+poetry run dbt run --profiles-dir . --profile spark --target local
+
+-- Airflow
+make airflow.shell
+airflow variables set DBT_PROFILE spark
+airflow dags trigger dag_dbt
+dbt run --profiles-dir . --profile spark --target dev
+dbt compile --profiles-dir /opt/airflow/dbts
+docker build -t custom-airflow-dbt:2.7.0 . #build inside docker/airflow
+docker logs airflow scheduler
+
+docker exec -u root -it airflow-scheduler bash
+chown -R 50000:50000 /opt/airflow/logs
+sudo chown -R 50000:50000 dbts dags 
+sudo chown -R lam_nguyen:lam_nguyen dags dbts 
+sudo chown -R 50000:50000 docker/volume/airflow/logs
+sudo chown -R lam_nguyen:lam_nguyen docker/volume/airflow/logs
+
+
+-- Dremio
+dremio config on web ui as following:"
+fs.s3a.access.key: minio
+fs.s3a.secret.key: minio123
+fs.s3a.endpoint: minio:9000
+fs.s3a.path.style.access: true
+fs.s3a.connection.ssl.enabled: false
+dremio.s3.compat: true
+fs.s3a.aws.credentials.provider: org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+"
+
+
+-- Git
+git diff origin/master..development --name-status  
+
+-- Start up sequence for lakehouse pipeline
+COMPOSE_PROFILES=trino,spark,flink,airflow,dremio,kafka docker compose -f docker-compose-cdc.yml -f docker-compose.yml up -d
+make compose.clean compose.freshstart
+make debezium.register
+#Create datalake bucket on http://localhost:9001/
+docker exec minio mc mb minio/datalake
+make flink.shell
+export HADOOP_CLASSPATH=`/opt/hadoop/bin/hadoop classpath`
+/opt/flink/bin/sql-client.sh embedded -f /opt/flink-client/flink-sql-demo.sql
+make airflow.shell
+dbt run --profiles-dir . --profile spark --target dev
+#Sign up dremio and query on http://localhost:9047/
+Dremio config:"dremio config on web ui as following:"
+fs.s3a.access.key: minio
+fs.s3a.secret.key: minio123
+fs.s3a.endpoint: minio:9000
+fs.s3a.path.style.access: true
+fs.s3a.connection.ssl.enabled: false
+dremio.s3.compat: true
+fs.s3a.aws.credentials.provider: org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+"
+sudo chmod -R 777 docker/volume/airflow/logs 
+sudo chmod -R 777 dbts
+
+-- ERROR
+ lam_nguyen@1-LAMNGUYEN11-W  ~/lakehouse   development ●  make spark.cli                                          ✔  ⚙  3262  09:55:20
+docker exec -it spark-thrift beeline -u jdbc:hive2://spark-thrift:10000
+Connecting to jdbc:hive2://spark-thrift:10000
+Could not open connection to the HS2 server. Please check the server URI and if the URI is correct, then ask the administrator to check the server status.
+Error: Could not open client transport with JDBC Uri: jdbc:hive2://spark-thrift:10000: java.net.ConnectException: Connection refused (Connection refused) (state=08S01,code=0)
+docker restart hive-metastore spark-thrift 
+
+
+--
+Change:
+Add spark thirft in docker compose 
+Open pyproject.toml and add dbt-spark = { version = "1.5.0", extras = ["PyHive"] } under [tool.poetry.dependencies], lock and install --no-root
+Modify docker compose to add spark-thrift and update the _PIP_ADDITIONAL_REQUIREMENTS environment variable in the x-airflow-common section to explicitly include dbt-spark.
+change profile from trino to spark in dbt_project and add int model.
+add spark profile in profiles
+thrift-sasl and dbt-spark in airflow deps
+conditional config for _source.yml catalog/database depend on trino/spark
+add +on_table_exists: drop into all model in dbt_project.yml
+#either trino or spark profile
+remove unnessary location/region model and their respective yml file
+modify airflow deps to match the one in poetry env
+add the demosql into flink job manager volume
+build custom airflow image since airflow deps need compilation tool, now airflow will use the custom image instead
+give airflow access ./docker/volume/airflow/logs 
+Remove the nested view/view.sql file: rm /home/airflow/.local/lib/python3.10/site-packages/dbt/include/global_project/macros/materializations/models/view/view.sql
+revert the additional requirement in both docker compose and custom image, stop forcing dbt version since lower version ike 1.5.x has known problem with duplicate macro in global_process or sthg, which was fixed after 1.8.
+airflow run successfully run with dev as target and spark profile.
+create dremio folder in docker and volume folder, mount dremio to it. add dremio in docker-compose
+
